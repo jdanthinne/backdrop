@@ -1,5 +1,8 @@
 <?php
-
+/**
+ * @file
+ * Esperanto language transliteration overrides.
+ */
 $overrides['eo'] = array(
   0x18 => 'Cx',
   0x19 => 'cx',

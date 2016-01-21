@@ -122,7 +122,8 @@ $.extend(Backdrop.viewsUi.FormFieldFiller.prototype, {
   getTransliterated: function () {
     var self = this;
     return $.ajax({
-      url: Backdrop.settings.basePath + "?q=" + Backdrop.encodePath("system/transliterate/" + self.source.val().toLowerCase() + "/" + self.replace),
+      url: Backdrop.settings.basePath + "?q=" + Backdrop.encodePath("system/transliterate/" + self.source.val().toLowerCase()),
+      data: { replace: self.replace },
       dataType: "text"
     });
   },

@@ -119,6 +119,7 @@ function _transliteration_process($string, $unknown = '?', $source_langcode = NU
         } while (--$remaining);
 
         $n = ord($head);
+        $ord = NULL;
         if ($n <= 0xdf) {
           $ord = ($n - 192) * 64 + (ord($sequence[1]) - 128);
         }
@@ -200,16 +201,11 @@ function _transliteration_replace($ord, $unknown = '?', $langcode = NULL) {
   $bank = $ord >> 8;
 
   if (!isset($map[$bank][$langcode])) {
+    $base = array(); // Populated from the include.
     $file = BACKDROP_ROOT . '/core/includes/transliteration/' . sprintf('x%02x', $bank) . '.php';
     if (file_exists($file)) {
       include $file;
-      if ($langcode != 'en' && isset($variant[$langcode])) {
-        // Merge in language specific mappings.
-        $map[$bank][$langcode] = $variant[$langcode] + $base;
-      }
-      else {
-        $map[$bank][$langcode] = $base;
-      }
+      $map[$bank][$langcode] = $base;
     }
     else {
       $map[$bank][$langcode] = array();
@@ -253,6 +249,8 @@ function transliteration_clean_filename($filename, $source_langcode = NULL) {
   // Allow other modules to alter the filename prior to processing.
   backdrop_alter('transliteration_clean_filename_prepare', $filename, $source_langcode);
   $filename = transliteration_get($filename, '', $source_langcode);
+  $filename = str_replace(' ', '_', $filename);
+  $filename = preg_replace('/[^a-z0-9_.-]+/i', '', $filename);
   // Force lowercase to prevent issues on case-insensitive file systems.
   if (config_get('system.core', 'file_transliterate_lowercase')) {
     $filename = strtolower($filename);
@@ -267,12 +265,12 @@ function transliteration_clean_filename($filename, $source_langcode = NULL) {
  * represent it in US-ASCII characters by conveying, in Roman letters, the
  * pronunciation expressed by the text in some other writing system.
  *
- * @param $text
+ * @param string $text
  *   UTF-8 encoded text input.
- * @param $unknown
+ * @param string $unknown
  *   Replacement string for characters that do not have a suitable ASCII
  *   equivalent.
- * @param $source_langcode
+ * @param string $source_langcode
  *   Optional ISO 639 language code that denotes the language of the input and
  *   is used to apply language-specific variations. If the source language is
  *   not known at the time of transliteration, it is recommended to set this
@@ -284,15 +282,11 @@ function transliteration_clean_filename($filename, $source_langcode = NULL) {
  * @see language_default()
  */
 function transliteration_get($text, $unknown = '?', $source_langcode = NULL) {
-  $result = _transliteration_process($text, $unknown, $source_langcode);
-  // Replace whitespace.
-  $result = str_replace(' ', $unknown, $result);
-  // Remove remaining unsafe characters.
-  $result = preg_replace('![^0-9A-Za-z_.-]!', '', $result);
-  // Remove multiple consecutive non-alphabetical characters.
-  $result = preg_replace('/(_)_+|(\.)\.+|(-)-+/', '\\1\\2\\3', $result);
-
-  return $result;
+  // Populate defaults.
+  if (empty($source_langcode)) {
+    $source_langcode = $GLOBALS['language']->langcode;
+  }
+  return _transliteration_process($text, $unknown, $source_langcode);
 }
 
 function transliteration_remove_diacritics($string) {

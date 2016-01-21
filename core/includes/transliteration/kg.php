@@ -1,5 +1,8 @@
 <?php
-
+/**
+ * @file
+ * Kyrgyz language transliteration overrides.
+ */
 $overrides['kg'] = array(
   0x41 => 'E',
   0x416 => 'C',
